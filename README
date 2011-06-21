@@ -1,0 +1,56 @@
+See http://sqlserverio.com/2011/02/22/sqldiy-manage-and-monitor-sql-server-yourself/ for a full description.
+
+Manage By Exception
+This means setting up your monitoring and alerting systems to work for you not against you. To many alerts are just as deadly as too few. As you handle problems feed the solution back into your automated system.
+
+Automate Everything
+Make your servers work for you and not against you! There is always a cost up front to automate the management of your environment. The time you get back by not having your very valuable and highly skilled workers not doing menial tasks more than makes up for it.
+
+Standardize Across Servers
+As servers come on line you may find that they aren’t setup to the company policies. Fixing all of this by hand is also a huge time waister. Define a standard and modify it as needed. Through automation you can make a single change and then deploy it across your entire environment.
+
+To meet these needs I’ve written several modules, a centralized system for managing them and the servers in my care. I will update this list with links as the articles come on line. If I use any code that I haven’t written I’ll be very clear who did write it, if I made changes to it and what the license to redistribute the code falls under.
+
+Monitoring
+
+Server Blocking
+Backup Status
+Check Backup Space
+Daily Status
+Database Drive Detail
+Server DB Configuration
+Server Database I/O
+Server Database Transaction Rate
+Server Poll
+Server Wait Statistics
+System Database Roles
+Job Schedules
+Table Statistics
+Long Running Queries
+Long Running Stored Procedures
+Log Shipping
+Administration
+
+Backup Database
+Update Statistics
+Re-indexing
+QA Refresh
+Test Backups
+Log Shipping
+Reporting
+
+Daily Status
+Meta Data
+Long Running Queries
+Long Running Stored Procedures
+Trend Analysis
+
+Backup/Restore Failure Analysis
+Backup Growth
+Drive Space Detail
+Server Blocking
+Database I/O
+Database Transaction Rate
+Server Wait Statistics
+Long Running Queries
+Long Running Stored Procedures

@@ -12,11 +12,40 @@ Functions:
 Bug Fix:
 **End Change Log**
 ************************************************************************************************/
-DROP PROCEDURE gathertablestatistics
+Create table [dbo].[TableStats]
+	(
+		ServerName varchar(255)
+		,DBName varchar(255)
+		,SchemaName nvarchar(128)
+		,TableName nvarchar(128)
+		,RowCounts numeric(38,0)
+		,ReservedKB numeric(38,0)
+		,DataKB numeric(38,0)
+		,IndexSizeKB numeric(38,0)
+		,UnusedKB numeric(38,0)
+		,RecordedDateTime datetime
+	)
+	
+		Create table [dbo].[TableStatsHistory]
+	(
+		ServerName varchar(255)
+		,DBName varchar(255)
+		,SchemaName nvarchar(128)
+		,TableName nvarchar(128)
+		,RowCounts numeric(38,0)
+		,ReservedKB numeric(38,0)
+		,DataKB numeric(38,0)
+		,IndexSizeKB numeric(38,0)
+		,UnusedKB numeric(38,0)
+		,RecordedDateTime datetime
+	)
+GO
+
+DROP PROCEDURE GatherTableStatistics
 
 GO
 
-CREATE PROCEDURE Gathertablestatistics @DatabaseList           VARCHAR(MAX),
+CREATE PROCEDURE GatherTableStatistics @DatabaseList           VARCHAR(MAX),
                                        @ExcludeSystemDatabases tinyint = 1
 AS
   SET nocount ON

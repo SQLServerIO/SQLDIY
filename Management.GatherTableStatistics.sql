@@ -12,6 +12,8 @@ Functions:
 Bug Fix:
 **End Change Log**
 ************************************************************************************************/
+/************************************************************************************************
+* Create these tables first if they don't exist in your system. 
 Create table [dbo].[TableStats]
 	(
 		ServerName varchar(255)
@@ -39,9 +41,16 @@ Create table [dbo].[TableStats]
 		,UnusedKB numeric(38,0)
 		,RecordedDateTime datetime
 	)
+************************************************************************************************/
+
+IF EXISTS (
+  SELECT 1
+    FROM INFORMATION_SCHEMA.ROUTINES 
+   WHERE SPECIFIC_NAME = N'GatherTableStatistics' 
+)
+DROP PROCEDURE GatherTableStatistics
 GO
 
-DROP PROCEDURE GatherTableStatistics
 
 GO
 
@@ -56,13 +65,13 @@ AS
   * Truncate holding tables
   *****************************************/
   IF EXISTS (SELECT 1
-             FROM   dbo.tablestats)
+             FROM   dbo.TableStats)
     BEGIN
-        INSERT INTO dbo.tablestatshistory
+        INSERT INTO dbo.TableStatsHistory
         SELECT *
-        FROM   tablestats;
+        FROM   TableStats;
 
-        TRUNCATE TABLE dbo.tablestats;
+        TRUNCATE TABLE dbo.TableStats;
     END
 
   DECLARE @table_name VARCHAR(128),
@@ -90,9 +99,14 @@ AS
        unused     VARCHAR(18)
     )
 
+	CREATE TABLE #dbnames
+	(
+		name NVARCHAR(128)
+	)
+
   SET @servername = CAST(Serverproperty('servername') AS VARCHAR(256))
 
-  IF Upper(@DatabaseList) = 'ALL'
+    IF Upper(@DatabaseList) = 'ALL'
     BEGIN
         IF @ExcludeSystemDatabases = 1
           BEGIN
@@ -110,17 +124,27 @@ AS
           END
 
         SET @DatabaseList = LEFT(@DatabaseList, Len(@DatabaseList) - 2) + ''''
+        
+		INSERT INTO #dbnames
+		EXEC('select name from master.dbo.sysdatabases where name in ('+@DatabaseList+')')
+
     END
-    
+    --found at http://mangalpardeshi.blogspot.com/2009/03/how-to-split-comma-delimited-string.html
+		;WITH Cte AS
+		(
+			select CAST('<M>' + REPLACE( @DatabaseList,  ',' , '</M><M>') + '</M>' AS XML) AS DatabaseNames
+		)
+		
+		insert into #dbnames
+		SELECT
+		Split.a.value('.', 'VARCHAR(100)') AS DatabaseNames
+		FROM Cte
+		CROSS APPLY DatabaseNames.nodes('/M') Split(a)
 
-  CREATE TABLE #dbnames
-    (
-       name NVARCHAR(128)
-    )
-
-  INSERT INTO #dbnames
-  EXEC('select name from master.dbo.sysdatabases where name in ('+@DatabaseList+
-  ')')
+    IF not exists(select 1 from #dbnames)
+    BEGIN
+		insert into #dbnames select @DatabaseList
+    END
 
   DECLARE db CURSOR FAST_FORWARD FOR
     SELECT name

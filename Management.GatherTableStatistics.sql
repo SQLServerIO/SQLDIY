@@ -2,7 +2,7 @@
 Table Stats
 By Wesley D. Brown
 Date 06/27/2011
-Mod
+**Mod**
 **Description**
 Gathers space usage for each table in the database specified. 
 Functions:

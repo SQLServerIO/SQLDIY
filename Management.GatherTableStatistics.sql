@@ -43,19 +43,21 @@ Create table [dbo].[TableStats]
 	)
 ************************************************************************************************/
 
-IF EXISTS (
-  SELECT 1
-    FROM INFORMATION_SCHEMA.ROUTINES 
-   WHERE SPECIFIC_NAME = N'GatherTableStatistics' 
-)
-DROP PROCEDURE GatherTableStatistics
+IF EXISTS (SELECT
+             1
+           FROM
+             INFORMATION_SCHEMA.ROUTINES
+           WHERE
+            SPECIFIC_NAME = N'GatherTableStatistics')
+  DROP PROCEDURE GatherTableStatistics
+
 GO
 
-
 GO
 
-CREATE PROCEDURE GatherTableStatistics @DatabaseList           VARCHAR(MAX),
-                                       @ExcludeSystemDatabases tinyint = 1
+CREATE PROCEDURE Gathertablestatistics
+  @DatabaseList           VARCHAR(MAX),
+  @ExcludeSystemDatabases TINYINT = 1
 AS
   SET nocount ON
 
@@ -64,91 +66,102 @@ AS
   /*****************************************
   * Truncate holding tables
   *****************************************/
-  IF EXISTS (SELECT 1
-             FROM   dbo.TableStats)
+  IF EXISTS (SELECT
+               1
+             FROM
+               dbo.TableStats)
     BEGIN
         INSERT INTO dbo.TableStatsHistory
-        SELECT *
-        FROM   TableStats;
+        SELECT
+          *
+        FROM
+          TableStats;
 
         TRUNCATE TABLE dbo.TableStats;
     END
 
-  DECLARE @table_name VARCHAR(128),
-          @servername VARCHAR(256),
-          @dbname     VARCHAR(256),
-          @schemaname NVARCHAR(128),
-          @tablename  NVARCHAR(128)
-
-  CREATE TABLE #tblholding
-    (
-       tblname    VARCHAR(500),
-       schemaname NVARCHAR(128),
-       tablename  NVARCHAR(128)
-    )
+  DECLARE
+    @table_name VARCHAR(128),
+    @servername VARCHAR(256),
+    @dbname     VARCHAR(256)
 
   CREATE TABLE #stats
     (
-       tablename  VARCHAR(300),
-       schemaname NVARCHAR(128),
-       tblname    NVARCHAR(128),
-       rowcounts  VARCHAR(18),
-       reserved   VARCHAR(18),
-       data       VARCHAR(18),
-       indexsize  VARCHAR(18),
-       unused     VARCHAR(18)
+	  ServerName varchar(255)
+		,DBName varchar(255)
+		,SchemaName nvarchar(128)
+		,TableName nvarchar(128)
+		,RowCounts numeric(38,0)
+		,ReservedKB numeric(38,0)
+		,DataKB numeric(38,0)
+		,IndexSizeKB numeric(38,0)
+		,UnusedKB numeric(38,0)
+		,RecordedDateTime datetime
     )
 
-	CREATE TABLE #dbnames
-	(
-		name NVARCHAR(128)
-	)
+  CREATE TABLE #dbnames
+    (
+       name NVARCHAR(128)
+    )
 
-  SET @servername = CAST(Serverproperty('servername') AS VARCHAR(256))
+  SET @servername = Cast(Serverproperty('servername') AS VARCHAR(256))
 
-    IF Upper(@DatabaseList) = 'ALL'
+  IF Upper(@DatabaseList) = 'ALL'
     BEGIN
         IF @ExcludeSystemDatabases = 1
           BEGIN
               SET @DatabaseList = '';
 
-              SELECT @DatabaseList = @DatabaseList + '''' + name + ''','
-              FROM   MASTER.dbo.sysdatabases
-              WHERE  name NOT IN ( 'master', 'msdb', 'model', 'pubs',
-                                   'northwind', 'tempdb' );
+              SELECT
+                @DatabaseList = @DatabaseList + '''' + name + ''','
+              FROM
+                MASTER.dbo.sysdatabases
+              WHERE
+                name NOT IN ( 'master', 'msdb', 'model', 'pubs',
+                              'northwind', 'tempdb' );
           END
         ELSE
           BEGIN
-              SELECT @DatabaseList = @DatabaseList + '''' + name + ''','
-              FROM   MASTER.dbo.sysdatabases;
+              SELECT
+                @DatabaseList = @DatabaseList + '''' + name + ''','
+              FROM
+                MASTER.dbo.sysdatabases;
           END
 
         SET @DatabaseList = LEFT(@DatabaseList, Len(@DatabaseList) - 2) + ''''
-        
-		INSERT INTO #dbnames
-		EXEC('select name from master.dbo.sysdatabases where name in ('+@DatabaseList+')')
+
+        INSERT INTO #dbnames
+        EXEC('select name from master.dbo.sysdatabases where name in ('+@DatabaseList+')')
 
     END
-    --found at http://mangalpardeshi.blogspot.com/2009/03/how-to-split-comma-delimited-string.html
-		;WITH Cte AS
-		(
-			select CAST('<M>' + REPLACE( @DatabaseList,  ',' , '</M><M>') + '</M>' AS XML) AS DatabaseNames
-		)
-		
-		insert into #dbnames
-		SELECT
-		Split.a.value('.', 'VARCHAR(100)') AS DatabaseNames
-		FROM Cte
-		CROSS APPLY DatabaseNames.nodes('/M') Split(a)
+  --found at http://mangalpardeshi.blogspot.com/2009/03/how-to-split-comma-delimited-string.html
+  ;
 
-    IF not exists(select 1 from #dbnames)
+  WITH Cte
+       AS (SELECT
+             Cast('<M>' + Replace(@DatabaseList, ',', '</M><M>') + '</M>' AS XML) AS DatabaseNames)
+  INSERT INTO #dbnames
+  SELECT
+    Split.a.value('.', 'VARCHAR(100)') AS DatabaseNames
+  FROM
+    Cte
+  CROSS APPLY DatabaseNames.nodes('/M') Split(a)
+
+  IF NOT EXISTS(SELECT
+                  1
+                FROM
+                  #dbnames)
     BEGIN
-		insert into #dbnames select @DatabaseList
+        INSERT INTO #dbnames
+        SELECT
+          @DatabaseList
     END
 
   DECLARE db CURSOR FAST_FORWARD FOR
-    SELECT name
-    FROM   #dbnames
+    SELECT
+      name
+    FROM
+      #dbnames
 
   OPEN db
 
@@ -158,75 +171,50 @@ AS
     BEGIN
         IF ( @@FETCH_STATUS <> -2 )
           BEGIN
-              IF (SELECT CONVERT(SYSNAME, Databasepropertyex(@dbname, 'status'))
-                 )
-                 =
-                 'ONLINE'
+              IF (SELECT
+                    CONVERT(SYSNAME, Databasepropertyex(@dbname, 'status'))) = 'ONLINE'
                 BEGIN
-                    INSERT INTO #tblholding
-                    EXEC('
-				select 
-					''[''+b.name+''].[''+a.name+'']'' as tblname,
-					b.name as SchemaName,
-					a.name as TableName
-				from
-				['+@dbname+'].sys.objects a
-				inner join
-				['+@dbname+'].sys.schemas b
-				on
-					a.schema_id = b.schema_id
-				where
-					type = ''U''
-				order by
-					a.name
-				')
+					exec('
+					USE ['+@dbname+']
+					insert into #stats
+                    SELECT
+                      '''+@servername+'''                            AS ServerName,
+                      '''+@dbname+'''                                AS DBName,
+                      Object_schema_name(object_id)                  AS SchemaName,
+                      Object_name(object_id)                         AS TableName,
+                      Sum(CASE
+                            WHEN index_id < 2 THEN row_count
+                            ELSE 0
+                          END)                                       AS RowCounts,
+                      Sum(reserved_page_count) * 8                   AS ReservedKB,
+                      Sum(CASE
+                            WHEN index_id < 2 THEN in_row_data_page_count + lob_used_page_count + row_overflow_used_page_count
+                            ELSE lob_used_page_count + row_overflow_used_page_count
+                          END) * 8                                   AS DataKB,
+                      ( Sum(used_page_count) - Sum(CASE
+                                                     WHEN index_id < 2 THEN in_row_data_page_count + lob_used_page_count + row_overflow_used_page_count
+                                                     ELSE lob_used_page_count + row_overflow_used_page_count
+                                                   END) ) * 8        AS IndexSizeKB,
+                      Sum(reserved_page_count - used_page_count) * 8 AS UnusedKB,
+                      Getdate()                                      AS RecordedDateTime
+                    FROM
+                      ['+@dbname+'].sys.dm_db_partition_stats
+                    WHERE
+                      Objectproperty(object_id, ''IsUserTable'') = 1
+                    GROUP  BY object_id')
+					insert into dbo.TableStats
+					select * from #stats
+					truncate table #stats
+                END
+          END
 
-                    WHILE (SELECT COUNT(*)
-                           FROM   #tblholding) > 0
-                      BEGIN
-                          SET @table_name = (SELECT TOP 1 tblname
-                                             FROM   #tblholding)
+        FETCH NEXT FROM db INTO @dbname
+    END
 
-                          SELECT @schemaname = schemaname,
-                                 @tablename = tablename
-                          FROM   #tblholding
-                          WHERE  tblname = @table_name
+  CLOSE db
 
-                          TRUNCATE TABLE #stats
+  DEALLOCATE db
 
-                          EXEC('use '+@dbname+'
-							insert into #Stats
-							(tblname,RowCounts,Reserved,Data,IndexSize,Unused)
-							exec sp_spaceused '''+
-							@table_name+'''')
+  DROP TABLE #stats
 
-                          UPDATE #stats
-                          SET    schemaname = @schemaname,
-                                 tablename = @tablename
-                          WHERE  schemaname IS NULL
-                                 AND tablename IS NULL
-
-                          SET @cmd ='insert into dbo.TableStats
-							select ''' + @servername + ''',''' +
-                          @dbname+''',SchemaName,Tablename,'+
-                          'RowCounts,left(Reserved,len(Reserved) - 3),'+
-                          'left(Data,len(Data) - 3),left(IndexSize,len(IndexSize) - 3),'+
-                          'left(Unused,len(Unused) - 3),getdate() from #Stats'
-
-						 EXEC(@cmd)
-
-						DELETE FROM #tblholding
-						WHERE  tblname = @table_name
-					 END
-				END
-			END
-		FETCH NEXT FROM db INTO @dbname
-	END
-
-	CLOSE db
-	DEALLOCATE db
-
-	DROP TABLE #tblholding
-	DROP TABLE #stats
-
-	SET nocount OFF 
+  SET nocount OFF 

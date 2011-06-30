@@ -15,41 +15,33 @@ Bug Fix:
 ************************************************************************************************/
 /************************************************************************************************
 * Create these tables first if they don't exist in your system. 
-CREATE TABLE [dbo].[TableMetadata] (
+CREATE TABLE [dbo].[DatabaseMetadata] (
 	[ServerName] [varchar] (256),
 	[DBName] [varchar] (256),
 	[TableName] [varchar] (128),
 	[Schema] [varchar] (128),
-	[ColumnOrder] [int],
-	[ColumnName] [varchar] (128),
-	[ColumnType] [varchar] (128),
-	[ColumnLength] [int] ,
-	[ColumnDescription] [varchar] (2000),
+	[TableDescription] [varchar] (2000),
 	[RecordedDateTime]		[datetime]        
 )
 
-CREATE TABLE [dbo].[TableMetadataHistory] (
+CREATE TABLE [dbo].[DatabaseMetadataHistory] (
 	[ServerName] [varchar] (256),
 	[DBName] [varchar] (256),
 	[TableName] [varchar] (128),
 	[Schema] [varchar] (128),
-	[ColumnOrder] [int],
-	[ColumnName] [varchar] (128),
-	[ColumnType] [varchar] (128),
-	[ColumnLength] [int] ,
-	[ColumnDescription] [varchar] (2000),
+	[TableDescription] [varchar] (2000),
 	[RecordedDateTime]		[datetime]        
 )
 ************************************************************************************************/
 IF EXISTS (
   SELECT 1
     FROM INFORMATION_SCHEMA.ROUTINES 
-   WHERE SPECIFIC_NAME = N'GatherTableMetadata' 
+   WHERE SPECIFIC_NAME = N'GatherDatabaseMetadata' 
 )
-DROP PROCEDURE GatherTableMetadata
+DROP PROCEDURE GatherDatabaseMetadata
 GO
 
-CREATE PROCEDURE GatherTableMetadata
+CREATE PROCEDURE GatherDatabaseMetadata
 				@DatabaseList           VARCHAR(MAX),
 				@ExcludeSystemDatabases tinyint = 1
 AS
@@ -58,13 +50,13 @@ AS
 * Truncate holding tables
 *****************************************/
   IF EXISTS (SELECT 1
-             FROM   dbo.TableMetadata)
+             FROM   dbo.DatabaseMetadata)
     BEGIN
-        INSERT INTO dbo.TableMetadataHistory
+        INSERT INTO dbo.DatabaseMetadataHistory
         SELECT *
-        FROM   TableMetadata;
+        FROM   DatabaseMetadata;
 
-        TRUNCATE TABLE dbo.TableMetadata;
+        TRUNCATE TABLE dbo.DatabaseMetadata;
     END
 
   DECLARE @cmd VARCHAR(8000),
@@ -141,35 +133,24 @@ AS
                  'ONLINE'
                 BEGIN
 					set @cmd ='
-					insert into dbo.TableMetadata
+					insert into dbo.DatabaseMetadata
 					SELECT
 					  '''+@servername+'''                                                          AS ''ServerName'',
 					  '''+@dbname+'''                                                              AS ''DBName'',
 					  o.name    			                                                       AS ''TableName'',
 					  Object_schema_name(o.object_id,DB_ID('''+@dbname+'''))                       AS ''SchemaName'',
-					  c.column_id                                                                  AS ''ColumnOrder'',
-					  c.name                                                                       AS ''ColumnName'',
-					  s.name                                                                       AS ''ColumnType'',
-					  c.max_length                                                                 AS ''ColumnLength'',
-					  Replace(Replace(Cast(e.value AS VARCHAR(2000)), Char(13), ''''), Char(11), '''') AS ''ColumnDescription'',
+					  Replace(Replace(Cast(e.value AS VARCHAR(2000)), Char(13), ''''), Char(11), '''') AS ''TableDescription'',
 					  '''+convert(varchar,@recordeddatetime, 121)+'''
 					FROM
 					  ['+@dbname+'].sys.objects o
-					INNER JOIN ['+@dbname+'].sys.columns c
-					  ON o.object_id = c.object_id
-					INNER JOIN ['+@dbname+'].sys.types s
-					  ON c.system_type_id = s.system_type_id
 					LEFT JOIN  ['+@dbname+'].sys.extended_properties e
-					  ON c.object_id = e.major_id
-						 AND c.column_id = e.minor_id
-						 and
-						 e.class = 1
+					  ON o.object_id = e.major_id
+						 AND e.minor_id = 0
 					WHERE
 					  o.type = ''U''
 					ORDER      BY
 					  Object_schema_name(o.object_id,DB_ID('''+@dbname+''')),
-					  o.object_id,
-					  c.column_id'
+					  o.object_id'
 					 EXEC(@cmd)
 				END
 			END

@@ -85,19 +85,6 @@ AS
     @servername VARCHAR(256),
     @dbname     VARCHAR(256)
 
-  CREATE TABLE #stats
-    (
-	  ServerName varchar(255)
-		,DBName varchar(255)
-		,SchemaName nvarchar(128)
-		,TableName nvarchar(128)
-		,RowCounts numeric(38,0)
-		,ReservedKB numeric(38,0)
-		,DataKB numeric(38,0)
-		,IndexSizeKB numeric(38,0)
-		,UnusedKB numeric(38,0)
-		,RecordedDateTime datetime
-    )
 
   CREATE TABLE #dbnames
     (
@@ -175,18 +162,18 @@ AS
                     CONVERT(SYSNAME, Databasepropertyex(@dbname, 'status'))) = 'ONLINE'
                 BEGIN
 					exec('
-					USE ['+@dbname+']
-					insert into #stats
+					
+					insert into dbo.TableStats
                     SELECT
-                      '''+@servername+'''                            AS ServerName,
-                      '''+@dbname+'''                                AS DBName,
-                      Object_schema_name(object_id)                  AS SchemaName,
-                      Object_name(object_id)                         AS TableName,
+                      '''+@servername+'''									AS ServerName,
+                      '''+@dbname+'''										AS DBName,
+                      Object_schema_name(object_id,DB_ID('''+@dbname+'''))  AS SchemaName,
+                      Object_name(object_id,DB_ID('''+@dbname+'''))         AS TableName,
                       Sum(CASE
                             WHEN index_id < 2 THEN row_count
                             ELSE 0
-                          END)                                       AS RowCounts,
-                      Sum(reserved_page_count) * 8                   AS ReservedKB,
+                          END)												AS RowCounts,
+                      Sum(reserved_page_count) * 8							AS ReservedKB,
                       Sum(CASE
                             WHEN index_id < 2 THEN in_row_data_page_count + lob_used_page_count + row_overflow_used_page_count
                             ELSE lob_used_page_count + row_overflow_used_page_count
@@ -202,9 +189,6 @@ AS
                     WHERE
                       Objectproperty(object_id, ''IsUserTable'') = 1
                     GROUP  BY object_id')
-					insert into dbo.TableStats
-					select * from #stats
-					truncate table #stats
                 END
           END
 
@@ -215,6 +199,6 @@ AS
 
   DEALLOCATE db
 
-  DROP TABLE #stats
+  DROP TABLE #dbnames
 
   SET nocount OFF 

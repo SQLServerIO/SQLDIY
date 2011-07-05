@@ -186,17 +186,17 @@ AS
 					INSERT INTO dbo.IndexUsageStatistics
 					SELECT   *
 							,'''+convert(varchar,@recordeddatetime, 121)+'''
-					FROM     (SELECT '''+@servername+''' AS server_name,
-									 '''+@dbname+''' AS database_name,
-									Object_schema_name(so.object_id,DB_ID('''+@dbname+''')) as ''schema_name'',
-									OBJECT_NAME(so.object_id,db_id('''+@dbname+''')) as ''table_name'',
-									 i.name AS index_name,
-									 is_used = Convert(BIT,CASE 
+					FROM     (SELECT '''+@servername+''' AS ''ServerName'',
+									 '''+@dbname+''' AS ''DBName'',
+									Object_schema_name(so.object_id,DB_ID('''+@dbname+''')) as ''SchemaName'',
+									OBJECT_NAME(so.object_id,db_id('''+@dbname+''')) as ''TableName'',
+									 i.name AS ''IndexName'',
+									 Convert(BIT,CASE 
 															 WHEN u.object_id IS NULL
 															 THEN 0
 															 ELSE 1
-														   END),
-									 is_expensive = Convert(BIT,CASE 
+														   END) as ''IsUsed'',
+									 Convert(BIT,CASE 
 																  WHEN (i.type_desc <> ''HEAP''
 																		AND (leaf_insert_count
 																			   + leaf_update_count
@@ -204,22 +204,22 @@ AS
 																										 + singleton_lookup_count))
 																  THEN 1
 																  ELSE 0
-																END),
+																END) as ''IsExpensive'',
 									 i.type_desc,
-									 user_reads = u.user_seeks
+									 u.user_seeks
 													+ u.user_scans
-													+ u.user_lookups,
-									 user_writes = u.user_updates,
-									 reads = range_scan_count
+													+ u.user_lookups as ''UserReads'',
+									 u.user_updates as ''UserWrites'',
+									 Reads = range_scan_count
 											   + singleton_lookup_count,
-									 ''leaf_writes'' = leaf_insert_count
+									 leaf_insert_count
 													   + leaf_update_count
-													   + leaf_delete_count,
-									 ''leaf_page_splits'' = leaf_allocation_count,
-									 ''nonleaf_writes'' = nonleaf_insert_count
-														  + nonleaf_update_count
-														  + nonleaf_delete_count,
-									 ''nonleaf_page_splits'' = nonleaf_allocation_count,
+													   + leaf_delete_count as''LeafWrites'',
+									 leaf_allocation_count as ''LeafPageSplits'',
+									 nonleaf_insert_count
+									 + nonleaf_update_count
+									 + nonleaf_delete_count as ''NonleafWrites'',
+									  nonleaf_allocation_count as ''NonleafPageSplits'',
 									 u.user_seeks,
 									 u.user_scans,
 									 u.user_lookups,
@@ -230,9 +230,9 @@ AS
 									 u.last_user_update,
 									 f.record_count,
 									 f.page_count,
-									 f.index_size_mb,
-									 f.avg_record_size_in_bytes,
-									 f.index_depth
+									 f.IndexSizeInMegabytes,
+									 f.AverageRecordSizeInBytes,
+									 f.IndexDepth
 							  FROM   ['+@dbname+'].sys.indexes i
 									 INNER JOIN ['+@dbname+'].sys.objects so
 									   ON so.object_id = i.object_id
@@ -243,9 +243,9 @@ AS
 														  Convert(FLOAT,Sum(page_count))
 															* 8192
 															/ 1024
-															/ 1024 AS index_size_mb,
-														  Avg(avg_record_size_in_bytes) AS avg_record_size_in_bytes,
-														  Sum(index_depth) AS index_depth
+															/ 1024 AS ''IndexSizeInMegabytes'',
+														  Avg(avg_record_size_in_bytes) AS ''AverageRecordSizeInBytes'',
+														  Sum(index_depth) AS ''IndexDepth''
 												 FROM     sys.Dm_db_index_physical_stats(DB_ID('''+@dbname+'''),NULL,NULL,NULL,''SAMPLED'') f
 												 GROUP BY object_id,
 														  index_id) f
@@ -261,8 +261,8 @@ AS
 							  WHERE  so.TYPE = ''U''
 							  ) indexes
 							ORDER BY 
-								table_name,
-								index_name'
+								TableName,
+								IndexName'
 					 EXEC(@cmd)
 				END
 			END

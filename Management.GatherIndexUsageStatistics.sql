@@ -10,79 +10,99 @@ actually in use by your system.
 Functions:
 **End Discription**
 **Change Log**
-Bug Fix:
+Bug Fix: altered table creation to conform with standard information schema checking
 **End Change Log**
 ************************************************************************************************/
 /************************************************************************************************
-/*
 DROP TABLE dbo.IndexUsageStatistics
 DROP TABLE dbo.IndexUsageStatisticsHistory
-*/
-CREATE TABLE dbo.IndexUsageStatistics(
-	ServerName nvarchar(128),
-	DBName nvarchar(128),
-	SchemaName nvarchar(128),
-	TableName nvarchar(128),
-	IndexName nvarchar(128),
-	IsUsed bit,
-	IsExpensive bit,
-	TypeDescription nvarchar(60),
-	UserReads bigint,
-	UserWrites bigint,
-	Reads bigint,
-	LeafWrites bigint,
-	LeafPageSplits bigint,
-	NonleafWrites bigint,
-	NonleafPageSplits bigint,
-	UserSeeks bigint,
-	UserScans bigint,
-	UserLookups bigint,
-	UserUpdates bigint,
-	LastUserSeek datetime,
-	LastUserScan datetime,
-	LastUserLookup datetime,
-	LastUserUpdate datetime,
-	RecordCount bigint,
-	TotalPageCount bigint,
-	IndexSizeInMegabytes float,
-	AverageRecordSizeInBytes float,
-	IndexDepth int,
-	RecordedDateTime datetime
-) 
-
-CREATE TABLE dbo.IndexUsageStatisticsHistory(
-	ServerName nvarchar(128),
-	DBName nvarchar(128),
-	SchemaName nvarchar(128),	
-	TableName nvarchar(128),
-	IndexName nvarchar(128),
-	IsUsed bit,
-	IsExpensive bit,
-	TypeDescription nvarchar(60),
-	UserReads bigint,
-	UserWrites bigint,
-	Reads bigint,
-	LeafWrites bigint,
-	LeafPageSplits bigint,
-	NonleafWrites bigint,
-	NonleafPageSplits bigint,
-	UserSeeks bigint,
-	UserScans bigint,
-	UserLookups bigint,
-	UserUpdates bigint,
-	LastUserSeek datetime,
-	LastUserScan datetime,
-	LastUserLookup datetime,
-	LastUserUpdate datetime,
-	RecordCount bigint,
-	TotalPageCount bigint,
-	IndexSizeInMegabytes float,
-	AverageRecordSizeInBytes float,
-	IndexDepth int,
-	RecordedDateTime datetime
-) 
-
 ************************************************************************************************/
+IF NOT EXISTS (SELECT *
+               FROM   dbo.sysobjects
+               WHERE  id = Object_id(N'[dbo].[IndexUsageStatistics]')
+                      AND Objectproperty(id, N'IsUserTable') = 1)
+  BEGIN
+	CREATE TABLE dbo.IndexUsageStatistics(
+		ServerName					nvarchar(128),
+		DBName						nvarchar(128),
+		SchemaName					nvarchar(128),
+		TableName					nvarchar(128),
+		IndexName					nvarchar(128),
+		IsUsed						bit,
+		IsExpensive					bit,
+		TypeDescription				nvarchar(60),
+		UserReads					bigint,
+		UserWrites					bigint,
+		Reads						bigint,
+		LeafWrites					bigint,
+		LeafPageSplits				bigint,
+		NonleafWrites				bigint,
+		NonleafPageSplits			bigint,
+		UserSeeks					bigint,
+		UserScans					bigint,
+		UserLookups					bigint,
+		UserUpdates					bigint,
+		LastUserSeek				datetime,
+		LastUserScan				datetime,
+		LastUserLookup				datetime,
+		LastUserUpdate				datetime,
+		RecordCount					bigint,
+		TotalPageCount				bigint,
+		IndexSizeInMegabytes		float,
+		AverageRecordSizeInBytes	float,
+		IndexDepth					int,
+		RecordedDateTime			datetime
+	) 
+  END
+ELSE
+  BEGIN
+      PRINT 'Table IndexUsageStatistics already exists'
+  END
+
+
+IF NOT EXISTS (SELECT *
+               FROM   dbo.sysobjects
+               WHERE  id = Object_id(N'[dbo].[IndexUsageStatisticsHistory]')
+                      AND Objectproperty(id, N'IsUserTable') = 1)
+  BEGIN
+	  CREATE TABLE dbo.IndexUsageStatisticsHistory(
+		ServerName					nvarchar(128),
+		DBName						nvarchar(128),
+		SchemaName					nvarchar(128),	
+		TableName					nvarchar(128),
+		IndexName					nvarchar(128),
+		IsUsed						bit,
+		IsExpensive					bit,
+		TypeDescription				nvarchar(60),
+		UserReads					bigint,
+		UserWrites					bigint,
+		Reads						bigint,
+		LeafWrites					bigint,
+		LeafPageSplits				bigint,
+		NonleafWrites				bigint,
+		NonleafPageSplits			bigint,
+		UserSeeks					bigint,
+		UserScans					bigint,
+		UserLookups					bigint,
+		UserUpdates					bigint,
+		LastUserSeek				datetime,
+		LastUserScan				datetime,
+		LastUserLookup				datetime,
+		LastUserUpdate				datetime,
+		RecordCount					bigint,
+		TotalPageCount				bigint,
+		IndexSizeInMegabytes		float,
+		AverageRecordSizeInBytes	float,
+		IndexDepth					int,
+		RecordedDateTime			datetime
+	) 
+  END
+ELSE
+  BEGIN
+      PRINT 'Table IndexUsageStatisticsHistory already exists'
+  END
+
+
 IF EXISTS (
   SELECT 1
     FROM INFORMATION_SCHEMA.ROUTINES 

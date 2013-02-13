@@ -1,3 +1,19 @@
+/************************************************************************************************
+Server Wait Statistics
+By Wesley D. Brown
+Date 06/27/2011
+**Description**
+This procedure pulls back server wait statistics so you can analyze possible bottlenecks.
+Functions:
+**End Discription**
+**Change Log**
+Bug Fix:
+**End Change Log**
+************************************************************************************************/
+/************************************************************************************************
+DROP TABLE dbo.ServerWaits
+DROP TABLE dbo.ServerWaitsHistory
+************************************************************************************************/
 IF NOT EXISTS (SELECT *
                FROM   dbo.sysobjects
                WHERE  id = Object_id(N'[dbo].[ServerWaits]')

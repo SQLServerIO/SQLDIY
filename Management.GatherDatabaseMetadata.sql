@@ -14,25 +14,48 @@ Bug Fix:
 **End Change Log**
 ************************************************************************************************/
 /************************************************************************************************
-* Create these tables first if they don't exist in your system. 
-CREATE TABLE [dbo].[DatabaseMetadata] (
-	[ServerName] [varchar] (256),
-	[DBName] [varchar] (256),
-	[TableName] [varchar] (128),
-	[Schema] [varchar] (128),
-	[TableDescription] [varchar] (2000),
-	[RecordedDateTime]		[datetime]        
-)
-
-CREATE TABLE [dbo].[DatabaseMetadataHistory] (
-	[ServerName] [varchar] (256),
-	[DBName] [varchar] (256),
-	[TableName] [varchar] (128),
-	[Schema] [varchar] (128),
-	[TableDescription] [varchar] (2000),
-	[RecordedDateTime]		[datetime]        
-)
+DROP TABLE [dbo].[DatabaseMetadata]
+DROP TABLE [dbo].[DatabaseMetadataHistory]
 ************************************************************************************************/
+IF NOT EXISTS (SELECT *
+               FROM   dbo.sysobjects
+               WHERE  id = Object_id(N'[dbo].[DatabaseMetadata]')
+                      AND Objectproperty(id, N'IsUserTable') = 1)
+BEGIN
+	CREATE TABLE [dbo].[DatabaseMetadata] (
+		[ServerName]		varchar(256),
+		[DBName]			varchar(256),
+		[TableName]			varchar(128),
+		[Schema]			varchar(128),
+		[TableDescription]	varchar(2000),
+		[RecordedDateTime]	datetime
+	)
+END
+ELSE
+BEGIN
+    PRINT 'Table DatabaseMetadata already exists'
+END
+
+IF NOT EXISTS (SELECT *
+               FROM   dbo.sysobjects
+               WHERE  id = Object_id(N'[dbo].[DatabaseMetadataHistory]')
+                      AND Objectproperty(id, N'IsUserTable') = 1)
+BEGIN
+	CREATE TABLE [dbo].[DatabaseMetadataHistory] (
+		[ServerName]			varchar(256),
+		[DBName]				varchar(256),
+		[TableName]				varchar(128),
+		[Schema]				varchar(128),
+		[TableDescription]		varchar(2000),
+		[RecordedDateTime]		datetime
+	)
+END
+ELSE
+BEGIN
+    PRINT 'Table DatabaseMetadataHistory already exists'
+END
+
+
 IF EXISTS (
   SELECT 1
     FROM INFORMATION_SCHEMA.ROUTINES 

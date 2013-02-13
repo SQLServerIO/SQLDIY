@@ -1,95 +1,92 @@
----------------------------------------------------------------------------------------
---  BlockingChains tables
---  by: Wesley D. Brown
---  date: 02/08/2011
---  mod:  
+/************************************************************************************************
+BlockingChains tables
+By: Wesley D. Brown
+Date: 02/08/2011
 
---  description:
---	Tables needed for AlertOnBlocking stored procedure
---  parameters:
---  platforms:
---  SQL Server 2005
---  SQL Server 2008
---  SQL Server 2008 R2
---  tested:
---  SQL Server 2005 SP2
---  SQL Server 2008 R2
----------------------------------------------------------------------------------------
---  *** change log		***
---  *** end change log	***
----------------------------------------------------------------------------------------
---USE <Management>
+**Description**
+This uses sys.extended_properties to pull back comments attached to columns and tables.
+It requires that MS_Description be the name of the property. 
+It also pulls back all column definitions stored in the systables for for that database.
+Functions:
+**End Discription**
+**Change Log**
+Bug Fix:
+**End Change Log**
+************************************************************************************************/
+/************************************************************************************************
+DROP TABLE [dbo].[BlockingChains]
+DROP TABLE [dbo].[BlockingChainsHistory]
+************************************************************************************************/
 GO
-IF EXISTS (SELECT
-             *
-           FROM
-             dbo.sysobjects
-           WHERE
-            id = Object_id(N'[dbo].[BlockingChains]')
-            AND Objectproperty(id, N'IsTable') = 1)
-  DROP TABLE [dbo].[BlockingChains]
-GO
-CREATE TABLE [dbo].[BlockingChains] (
-	[ServerName] [varchar] (255) NOT NULL,
-	[SampleTime] [datetime] NOT NULL ,
-	[Spid] [int] NULL ,
-	[SpidBlocked] [int] NULL ,
-	[WaitType] [varchar] (255) NULL ,
-	[WaitTime] [bigint] NULL ,
-	[PhysicalIO] [bigint] NULL ,
-	[CPUInSeconds] [bigint] NULL ,
-	[MemoryUsed] [bigint] NULL ,
-	[Name] [nvarchar] (128)  NOT NULL ,
-	[NumberOfOpenTransactions] [tinyint] NULL ,
-	[Status] [varchar] (20)  NULL ,
-	[HostName] [varchar] (50)  NULL ,
-	[ProgramName] [varchar] (100)  NULL ,
-	[CommandIssued] [varchar] (100)  NULL ,
-	[DomainName] [varchar] (100)  NULL ,
-	[DomainUserName] [varchar] (200)  NULL ,
-	[LoginName] [varchar] (100)  NULL ,
-	[EventTpe] [varchar] (255)  NULL ,
-	[Parameters] [varchar] (255)  NULL ,
-	[EventInfo] [varchar] (4000)  NULL ,
-	[CommandText] [varchar] (max)  NULL
-)
-GO
+IF NOT EXISTS (SELECT *
+               FROM   dbo.sysobjects
+               WHERE  id = Object_id(N'[dbo].[BlockingChains]')
+                      AND Objectproperty(id, N'IsUserTable') = 1)
+BEGIN
+	CREATE TABLE [dbo].[BlockingChains] (
+		[ServerName] [varchar] (255) NOT NULL,
+		[SampleTime] [datetime] NOT NULL ,
+		[Spid] [int] NULL ,
+		[SpidBlocked] [int] NULL ,
+		[WaitType] [varchar] (255) NULL ,
+		[WaitTime] [bigint] NULL ,
+		[PhysicalIO] [bigint] NULL ,
+		[CPUInSeconds] [bigint] NULL ,
+		[MemoryUsed] [bigint] NULL ,
+		[Name] [nvarchar] (128)  NOT NULL ,
+		[NumberOfOpenTransactions] [tinyint] NULL ,
+		[Status] [varchar] (20)  NULL ,
+		[HostName] [varchar] (50)  NULL ,
+		[ProgramName] [varchar] (100)  NULL ,
+		[CommandIssued] [varchar] (100)  NULL ,
+		[DomainName] [varchar] (100)  NULL ,
+		[DomainUserName] [varchar] (200)  NULL ,
+		[LoginName] [varchar] (100)  NULL ,
+		[EventTpe] [varchar] (255)  NULL ,
+		[Parameters] [varchar] (255)  NULL ,
+		[EventInfo] [varchar] (4000)  NULL ,
+		[CommandText] [varchar] (max)  NULL
+	)
+END
+ELSE
+BEGIN
+    PRINT 'Table BlockingChains already exists'
+END
 
-IF EXISTS (SELECT
-             *
-           FROM
-             dbo.sysobjects
-           WHERE
-            id = Object_id(N'[dbo].[BlockingChainsHistory]')
-            AND Objectproperty(id, N'IsTable') = 1)
-  DROP TABLE [dbo].[BlockingChainsHistory]
-GO
-
-CREATE TABLE [dbo].[BlockingChainsHistory] (
-	[ServerName] [varchar] (255) NOT NULL,
-	[SampleTime] [datetime] NOT NULL ,
-	[Spid] [int] NULL ,
-	[SpidBlocked] [int] NULL ,
-	[WaitType] [varchar] (255) NULL ,
-	[WaitTime] [bigint] NULL ,
-	[PhysicalIO] [bigint] NULL ,
-	[CPUInSeconds] [bigint] NULL ,
-	[MemoryUsed] [bigint] NULL ,
-	[Name] [nvarchar] (128)  NOT NULL ,
-	[NumberOfOpenTransactions] [tinyint] NULL ,
-	[Status] [varchar] (20)  NULL ,
-	[HostName] [varchar] (50)  NULL ,
-	[ProgramName] [varchar] (100)  NULL ,
-	[CommandIssued] [varchar] (100)  NULL ,
-	[DomainName] [varchar] (100)  NULL ,
-	[DomainUserName] [varchar] (200)  NULL ,
-	[LoginName] [varchar] (100)  NULL ,
-	[EventTpe] [varchar] (255)  NULL ,
-	[Parameters] [varchar] (255)  NULL ,
-	[EventInfo] [varchar] (4000)  NULL ,
-	[CommandText] [varchar] (max)  NULL
-)
-GO
+IF NOT EXISTS (SELECT *
+               FROM   dbo.sysobjects
+               WHERE  id = Object_id(N'[dbo].[BlockingChainsHistory]')
+                      AND Objectproperty(id, N'IsUserTable') = 1)
+BEGIN
+	CREATE TABLE [dbo].[BlockingChainsHistory] (
+		[ServerName] [varchar] (255) NOT NULL,
+		[SampleTime] [datetime] NOT NULL ,
+		[Spid] [int] NULL ,
+		[SpidBlocked] [int] NULL ,
+		[WaitType] [varchar] (255) NULL ,
+		[WaitTime] [bigint] NULL ,
+		[PhysicalIO] [bigint] NULL ,
+		[CPUInSeconds] [bigint] NULL ,
+		[MemoryUsed] [bigint] NULL ,
+		[Name] [nvarchar] (128)  NOT NULL ,
+		[NumberOfOpenTransactions] [tinyint] NULL ,
+		[Status] [varchar] (20)  NULL ,
+		[HostName] [varchar] (50)  NULL ,
+		[ProgramName] [varchar] (100)  NULL ,
+		[CommandIssued] [varchar] (100)  NULL ,
+		[DomainName] [varchar] (100)  NULL ,
+		[DomainUserName] [varchar] (200)  NULL ,
+		[LoginName] [varchar] (100)  NULL ,
+		[EventTpe] [varchar] (255)  NULL ,
+		[Parameters] [varchar] (255)  NULL ,
+		[EventInfo] [varchar] (4000)  NULL ,
+		[CommandText] [varchar] (max)  NULL
+	)
+END
+ELSE
+BEGIN
+    PRINT 'Table BlockingChainsHistory already exists'
+END
 
 --USE Management
 

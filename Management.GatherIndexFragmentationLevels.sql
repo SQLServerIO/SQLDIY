@@ -12,39 +12,58 @@ Bug Fix:
 **End Change Log**
 ************************************************************************************************/
 /************************************************************************************************
-Tables Needed:
 DROP TABLE dbo.IndexFragmentationLevels
 DROP TABLE dbo.IndexFragmentationLevelsHistory
-
-CREATE TABLE dbo.IndexFragmentationLevels
-  (
-     ServerName       NVARCHAR(128),
-     DBName           NVARCHAR(128),
-     PartitionNumber  SMALLINT,
-     SchemaName       NVARCHAR(128),
-     TableName        NVARCHAR(128),
-     IndexName        NVARCHAR(128),
-     Fragmentation    FLOAT,
-     PageTotalCount   INT,
-     RangeScanCount   BIGINT,
-     RecordedDateTime DATETIME
-  ); 
-
-
-CREATE TABLE dbo.IndexFragmentationLevelsHistory
-  (
-     ServerName       NVARCHAR(128),
-     DBName           NVARCHAR(128),
-     PartitionNumber  SMALLINT,
-     SchemaName       NVARCHAR(128),
-     TableName        NVARCHAR(128),
-     IndexName        NVARCHAR(128),
-     Fragmentation    FLOAT,
-     PageTotalCount   INT,
-     RangeScanCount   BIGINT,
-     RecordedDateTime DATETIME
-  ); 
 ************************************************************************************************/
+IF NOT EXISTS (SELECT *
+               FROM   dbo.sysobjects
+               WHERE  id = Object_id(N'[dbo].[IndexFragmentationLevels]')
+                      AND Objectproperty(id, N'IsUserTable') = 1)
+  BEGIN
+	CREATE TABLE dbo.IndexFragmentationLevels
+		(
+			ServerName       NVARCHAR(128),
+			DBName           NVARCHAR(128),
+			PartitionNumber  SMALLINT,
+			SchemaName       NVARCHAR(128),
+			TableName        NVARCHAR(128),
+			IndexName        NVARCHAR(128),
+			Fragmentation    FLOAT,
+			PageTotalCount   INT,
+			RangeScanCount   BIGINT,
+			RecordedDateTime DATETIME
+		); 
+    END
+ELSE
+  BEGIN
+      PRINT 'Table IndexUsageStatistics already exists'
+  END
+
+
+IF NOT EXISTS (SELECT *
+               FROM   dbo.sysobjects
+               WHERE  id = Object_id(N'[dbo].[IndexFragmentationLevelsHistory]')
+                      AND Objectproperty(id, N'IsUserTable') = 1)
+	BEGIN
+		CREATE TABLE dbo.IndexFragmentationLevelsHistory
+		(
+			ServerName       NVARCHAR(128),
+			DBName           NVARCHAR(128),
+			PartitionNumber  SMALLINT,
+			SchemaName       NVARCHAR(128),
+			TableName        NVARCHAR(128),
+			IndexName        NVARCHAR(128),
+			Fragmentation    FLOAT,
+			PageTotalCount   INT,
+			RangeScanCount   BIGINT,
+			RecordedDateTime DATETIME
+		); 
+	END
+ELSE
+	BEGIN
+		PRINT 'Table IndexUsageStatistics already exists'
+	END
+
 
 IF EXISTS (
   SELECT 1

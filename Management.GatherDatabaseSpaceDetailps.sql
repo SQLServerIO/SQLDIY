@@ -1,8 +1,5 @@
-use SQLDIY;
-declare	@DatabaseList           VARCHAR(MAX),
-		@ExcludeSystemDatabases tinyint
-set @DatabaseList = 'ALL'
-set @ExcludeSystemDatabases = 0;
+	DECLARE @DatabaseList VARCHAR(MAX)
+	DECLARE @ExcludeSystemDatabases tinyint
 	DECLARE @dletter VARCHAR(2) 
 	DECLARE @fspace INT 
 	DECLARE @tspace BIGINT 
@@ -13,6 +10,10 @@ set @ExcludeSystemDatabases = 0;
 	DECLARE @date AS VARCHAR(10) 
 	DECLARE @DBid AS VARCHAR(3) 
 	DECLARE @svrname AS VARCHAR(255) 
+	DECLARE @recordeddate as datetime
+	set @recordeddate = getdate()
+	set @DatabaseList = 'ALL'
+	set @ExcludeSystemDatabases = 0;
 
 	SET @svrname = CONVERT(VARCHAR(255), Serverproperty('ServerName')) 
 	SET @date = Cast(Datepart(year, Getdate())AS CHAR(4)) 
@@ -22,113 +23,29 @@ set @ExcludeSystemDatabases = 0;
 				+ Cast(Datepart(day, Getdate()) AS VARCHAR(2)) 
 
 	/***************************************** 
-	* Truncate or create holding tables 
-	*****************************************/ 
-	IF NOT EXISTS (SELECT * 
-				   FROM   dbo.sysobjects 
-				   WHERE  id = Object_id(N'[dbo].[DB]') 
-						  AND Objectproperty(id, N'IsUserTable') = 1) 
-	  BEGIN 
-		  CREATE TABLE [dbo].DB 
-			( 
-			   DBName         VARCHAR(255) NOT NULL, 
-			   ServerName     VARCHAR(255) NOT NULL, 
-			   CreateDate     DATETIME NULL, 
-			   LastActiveDate DATETIME NULL 
-			) 
-	  END 
-	ELSE 
-	  BEGIN 
-		  TRUNCATE TABLE [dbo].DB
-	  END 
-
-	IF NOT EXISTS (SELECT * 
-				   FROM   dbo.sysobjects 
-				   WHERE  id = Object_id(N'[dbo].[DBFile]') 
-						  AND Objectproperty(id, N'IsUserTable') = 1) 
-	  BEGIN 
-		CREATE TABLE [dbo].[DBFileHistory] (
-			   DBFileName           varchar(255),
-			   DBName               varchar(255),
-			   ServerName           varchar(255),
-			   DriveName            char(1) ,
-			   CreateDate           datetime ,
-			   LastActiveDate       datetime ,
-			   DBFileGroup          varchar(255),
-			   FileSizeKB           dec(38,2),
-			   SpaceUsedKB          dec(38,2),
-			   FileType             varchar(10),
-			   RecordedDateTime		datetime
-		)
-	END
-	IF NOT EXISTS (SELECT * 
-				   FROM   dbo.sysobjects 
-				   WHERE  id = Object_id(N'[dbo].[DBFile]') 
-						  AND Objectproperty(id, N'IsUserTable') = 1) 
-	  BEGIN 
-		  CREATE TABLE [dbo].[DBFile] 
-			( 
-			   DBFilename     VARCHAR(255) NOT NULL, 
-			   DBName         VARCHAR(255) NOT NULL, 
-			   ServerName     VARCHAR(255) NOT NULL, 
-			   DriveName      CHAR(1) NULL, 
-			   CreateDate     DATETIME NULL, 
-			   LastActiveDate DATETIME NULL, 
-			   DBFileGroup    VARCHAR(255) NULL, 
-			   FileSizeKB     DEC(38, 2) NULL, 
-			   SpaceUsedKB    DEC(38, 2) NULL, 
-			   FileType           VARCHAR(10) NULL 
-			) 
-	  END 
-	ELSE 
-	  BEGIN 
-		  IF EXISTS (SELECT 1
-					 FROM   dbo.DBFile)
-			BEGIN
-				UPDATE dbh set LastActiveDate = db.LastActiveDate, FileSizeKB = db.FileSizeKB, SpaceUsedKB = db.SpaceUsedKB, RecordedDateTime = getdate()
-				from
-					dbo.DBFileHistory dbh
-				inner join
-					DBFile db
-				on
-					db.DBName = dbh.DBName
-				and
-					db.DBFileGroup = dbh.DBFileGroup
-				and
-					db.DBFileName = dbh.DBFileName
-
-				INSERT INTO dbo.DBFileHistory
-				SELECT 
-					db.DBFileName
-					, db.DBName
-					, db.ServerName
-					, db.DriveName
-					, db.CreateDate
-					, db.LastActiveDate
-					, db.DBFileGroup
-					, db.FileSizeKB
-					, db.SpaceUsedKB
-					, db.FileType
-					, getdate() as RecordedDateTime
-				FROM   DBFile db
-				left outer join
-				DBFileHistory dbh
-				on
-				db.DBName = dbh.DBName
-				and
-				db.DBFileGroup = dbh.DBFileGroup
-				and
-				db.DBFileName = dbh.DBFileName
-				where
-				dbh.DBName is null;
-
-
-				TRUNCATE TABLE dbo.DBFile;
-			END
-	  END 
-	/***************************************** 
 	* Create temp tables 
 	*****************************************/ 
+	IF EXISTS (SELECT * 
+				   FROM   tempdb.dbo.sysobjects 
+				   WHERE  [name] like '##DBFile%' 
+						  AND Objectproperty(id, N'IsUserTable') = 1) 
+	  drop table ##DBFile
+	  
+  CREATE TABLE ##DBFile 
+	( 
+	   DBFilename     VARCHAR(255) NOT NULL, 
+	   DBName         VARCHAR(255) NOT NULL, 
+	   ServerName     VARCHAR(255) NOT NULL, 
+	   DriveName      CHAR(1) NULL, 
+	   CreateDate     DATETIME NULL, 
+	   LastActiveDate DATETIME NULL, 
+	   DBFileGroup    VARCHAR(255) NULL, 
+	   FileSizeKB     DEC(38, 2) NULL, 
+	   SpaceUsedKB    DEC(38, 2) NULL, 
+	   FileType           VARCHAR(10) NULL,
+	   RecordedDateTime DATETIME NULL
+	) 
+	
 	if exists(select 1 from tempDB.dbo.sysobjects where name like '##dbnames%')
 	drop table ##dbnames
 
@@ -219,27 +136,10 @@ set @ExcludeSystemDatabases = 0;
 
     END;
 
-
-/* 		WITH Cte AS
-		(
-			select CAST('<M>' + REPLACE( @DatabaseList,  ',' , '</M><M>') + '</M>' AS XML) AS DatabaseNames
-		)
-		
-		insert into ##dbnames
-		SELECT
-		Split.a.value('.', 'VARCHAR(100)') AS DatabaseNames
-		FROM Cte
-		CROSS APPLY DatabaseNames.nodes('/M') Split(a);
-		
-    IF not exists(select 1 from ##dbnames)
-    BEGIN
-		insert into ##dbnames select @DatabaseList;
-    END */
-
 	/***************************************** 
 	* Return disk space info 
 	*****************************************/ 
-	INSERT INTO SQLDIY.dbo.[DBFile] 
+	INSERT INTO ##DBFile 
 				(DBFilename, 
 				 DBName, 
 				 ServerName, 
@@ -304,12 +204,14 @@ set @ExcludeSystemDatabases = 0;
 
 	DEALLOCATE DB_cursor 
 
-	UPDATE SQLDIY.dbo.[DBFile] 
-	SET    DBFileGroup = a.[filegroup], 
+	UPDATE ##DBFile 
+	SET    
+		   DBFileGroup = a.[filegroup], 
 		   SpaceUsedKB = Cast(a.usedextents AS DECIMAL(38, 2)) * 64, 
-		   [FileType] = 'Data' 
+		   [FileType] = 'Data',
+		   RecordedDateTime = @recordeddate
 	FROM   ##DBusage_base a 
-		   INNER JOIN dbo.DBFile b 
+		   INNER JOIN ##DBFile b 
 				   ON Ltrim(Rtrim(a.server_name)) = b.ServerName 
 					  AND a.database_name = b.DBName 
 					  AND a.[name] = b.DBFilename; 
@@ -382,24 +284,18 @@ set @ExcludeSystemDatabases = 0;
 
 	DEALLOCATE DB_cursor 
 
-	UPDATE SQLDIY.dbo.[DBFile] 
-	SET    SpaceUsedKB = a.SpaceUsedKB, 
+	UPDATE ##DBFile 
+	SET    
+	    SpaceUsedKB = a.SpaceUsedKB, 
 		   [FileType] = 'Log', 
-		   DBFileGroup = 'NA' 
+		   DBFileGroup = 'NA',
+		   RecordedDateTime = @recordeddate
 	FROM   ##loginfo_results a 
-		   INNER JOIN dbo.DBFile b 
+		   INNER JOIN ##DBFile b 
 				   ON a.ServerName = b.ServerName 
 					  AND a.DBName = b.DBName 
 					  AND a.DBFilename = b.DBFilename; 
 
-	INSERT INTO SQLDIY.dbo.DB 
-	SELECT DISTINCT DBName, 
-					ServerName, 
-					CreateDate, 
-					LastActiveDate 
-	FROM   SQLDIY.dbo.DBFile; 
-
-	select * from SQLDIY.dbo.DBFile;
-	select * from SQLDIY.dbo.DB;
+	select * from ##DBFile as DBFile;
 	--SET nocount OFF 
 	

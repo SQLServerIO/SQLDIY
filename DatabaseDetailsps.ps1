@@ -18,12 +18,11 @@ param(
 # Determine if a sql command is given or the path to a file.
 #
 $table = "";
-$sqlFile = "C:\projects\source\opensource\SQLDIY\Management.GatherDatabaseSpaceDetailps.sql"
-$server = "WARMACHINE";
+$sqlFile = "C:\Users\wdb24950\Desktop\SQLDIY\Management.GatherDatabaseSpaceDetailps.sql"
+$server = "VM-UNITREND-01\SQLEXPRESS";
+$rserver = "VM-UNITREND-01\SQLEXPRESS";
 $database = "master";
-$rdatabase = "SQLDIY";
-#$userName, #Optional parm to specify the UserName/Password for the connection
-#$password  #Optional parm to specify the UserName/Password for the connection
+$rdatabase = "Management";
 
 $command = $sqlFile.Trim();
 if (Test-Path $command -pathType leaf)
